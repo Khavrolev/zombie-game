@@ -1,5 +1,5 @@
 import Phaser from 'phaser'
-import { $cannonHp, addMoney, resetCannon } from '../../state/store'
+import { $cannonHp, addMoney, resetCannon, spendMoney } from '../../state/store'
 import {
   CANNON_MAX_HP,
   CANNON_BURST_COUNT,
@@ -10,11 +10,13 @@ import {
   MONEY_SKY_AMOUNT,
   MONEY_SKY_INTERVAL_MS,
   MONEY_ZOMBIE_DROP_AMOUNT,
+  RAKE_COST,
   SOLDIER_COOLDOWN_MS,
   SOLDIER_MAX_HP,
   ZOMBIE_ATTACK_INTERVAL_MS,
   ZOMBIE_SPAWN_X,
 } from '../constants'
+import { Rake } from '../entities/Rake'
 import { Soldier } from '../entities/Soldier'
 import { Zombie } from '../entities/Zombie'
 import { getTotalZombieCount } from '../levels/level-utils'
@@ -34,6 +36,8 @@ export class MainScene extends Phaser.Scene {
   private zombies: Zombie[] = []
   private soldiers: Map<number, Soldier> = new Map()
   private soldierCooldowns = new Map<Soldier, number | null>()
+  private rakes: Rake[] = []
+  private rakePlacementActive = false
   private waveIndex = 0
   private spawnedInWave = 0
   private waveTimer?: Phaser.Time.TimerEvent
@@ -79,6 +83,12 @@ export class MainScene extends Phaser.Scene {
       this.cannon.setFillStyle(isDestroyed(hp) ? 0x555555 : 0x3355aa)
     })
 
+    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      if (this.rakePlacementActive) {
+        this.tryPlaceRake(pointer.x, pointer.y)
+      }
+    })
+
     this.startWave(0)
   }
 
@@ -118,6 +128,15 @@ export class MainScene extends Phaser.Scene {
       }
       const blinkVisible = !isBlinking(drop.droppedAt, this.time.now) || Math.floor(this.time.now / 150) % 2 === 0
       drop.setVisible(blinkVisible)
+    }
+
+    for (const rake of [...this.rakes]) {
+      const hit = this.zombies.find((z) => distance(z, rake) <= CONTACT_RADIUS_PX)
+      if (hit) {
+        this.hitZombie(hit)
+        rake.destroy()
+        this.rakes = this.rakes.filter((r) => r !== rake)
+      }
     }
   }
 
@@ -171,6 +190,16 @@ export class MainScene extends Phaser.Scene {
     for (const zombie of targets) {
       this.hitZombie(zombie)
     }
+  }
+
+  enterRakePlacement(): void {
+    this.rakePlacementActive = true
+  }
+
+  private tryPlaceRake(x: number, y: number): void {
+    this.rakePlacementActive = false
+    if (!spendMoney(RAKE_COST)) return
+    this.rakes.push(new Rake(this, x, y))
   }
 
   placeSoldier(): boolean {

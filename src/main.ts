@@ -25,7 +25,8 @@ if (uiRoot) {
       }
     },
     onBuyRake: () => {
-      // wired in Task 17
+      const scene = game.scene.getScene('MainScene') as MainScene
+      scene.enterRakePlacement()
     },
   })
 }
