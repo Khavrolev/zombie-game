@@ -10,9 +10,12 @@ import {
   MONEY_SKY_AMOUNT,
   MONEY_SKY_INTERVAL_MS,
   MONEY_ZOMBIE_DROP_AMOUNT,
+  SOLDIER_COOLDOWN_MS,
+  SOLDIER_MAX_HP,
   ZOMBIE_ATTACK_INTERVAL_MS,
   ZOMBIE_SPAWN_X,
 } from '../constants'
+import { Soldier } from '../entities/Soldier'
 import { Zombie } from '../entities/Zombie'
 import { getTotalZombieCount } from '../levels/level-utils'
 import { canFire } from '../logic/cooldown'
@@ -29,6 +32,8 @@ export class MainScene extends Phaser.Scene {
   private cannon!: Phaser.GameObjects.Rectangle
   private moneyDrops: MoneyDrop[] = []
   private zombies: Zombie[] = []
+  private soldiers: Soldier[] = []
+  private soldierCooldowns = new Map<Soldier, number | null>()
   private waveIndex = 0
   private spawnedInWave = 0
   private waveTimer?: Phaser.Time.TimerEvent
@@ -82,8 +87,13 @@ export class MainScene extends Phaser.Scene {
     const cannonAlive = !isDestroyed($cannonHp.get())
 
     for (const zombie of [...this.zombies]) {
-      const inCannonRange = cannonAlive && distance(zombie, this.level.cannonPosition) <= CONTACT_RADIUS_PX
+      const nearbySoldier = this.soldiers.find((s) => distance(zombie, s) <= CONTACT_RADIUS_PX)
+      if (nearbySoldier) {
+        this.attackSoldierIfReady(zombie, nearbySoldier)
+        continue
+      }
 
+      const inCannonRange = cannonAlive && distance(zombie, this.level.cannonPosition) <= CONTACT_RADIUS_PX
       if (inCannonRange) {
         this.attackCannonIfReady(zombie)
         continue
@@ -161,6 +171,43 @@ export class MainScene extends Phaser.Scene {
     for (const zombie of targets) {
       this.hitZombie(zombie)
     }
+  }
+
+  placeSoldier(): void {
+    if (this.soldiers.length >= this.level.soldierSlots.length) return
+    const slot = this.level.soldierSlots[this.soldiers.length]
+    const soldier = new Soldier(this, slot.x, slot.y)
+    this.soldiers.push(soldier)
+    this.soldierCooldowns.set(soldier, null)
+    soldier.on('pointerdown', () => this.fireSoldier(soldier))
+  }
+
+  private fireSoldier(soldier: Soldier): void {
+    const now = this.time.now
+    const last = this.soldierCooldowns.get(soldier) ?? null
+    if (!canFire(last, now, SOLDIER_COOLDOWN_MS)) return
+    this.soldierCooldowns.set(soldier, now)
+
+    const [target] = nearestTargets(soldier, this.zombies, 1)
+    if (target) {
+      this.hitZombie(target)
+    }
+  }
+
+  private attackSoldierIfReady(zombie: Zombie, soldier: Soldier): void {
+    const now = this.time.now
+    if (!canFire(zombie.lastAttackAt, now, ZOMBIE_ATTACK_INTERVAL_MS)) return
+    zombie.lastAttackAt = now
+    soldier.hp = applyHit(soldier.hp, SOLDIER_MAX_HP)
+    if (isDestroyed(soldier.hp)) {
+      this.removeSoldier(soldier)
+    }
+  }
+
+  private removeSoldier(soldier: Soldier): void {
+    soldier.destroy()
+    this.soldiers = this.soldiers.filter((s) => s !== soldier)
+    this.soldierCooldowns.delete(soldier)
   }
 
   private startWave(index: number): void {
