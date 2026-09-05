@@ -1,5 +1,5 @@
 import Phaser from 'phaser'
-import { $cannonHp, addMoney, resetCannon, spendMoney } from '../../state/store'
+import { $cannonHp, $levelCompleted, addMoney, resetCannon, spendMoney } from '../../state/store'
 import {
   CANNON_MAX_HP,
   CANNON_BURST_COUNT,
@@ -290,6 +290,9 @@ export class MainScene extends Phaser.Scene {
     const outcome = getLevelOutcome({ zombiesRemaining, chestReached: this.chestReached })
     if (outcome === 'in-progress') return
     this.outcomeResolved = true
-    console.log('level outcome:', outcome)
+    if (outcome === 'won') {
+      $levelCompleted.set(true)
+    }
+    window.dispatchEvent(new CustomEvent('game:outcome', { detail: outcome }))
   }
 }
