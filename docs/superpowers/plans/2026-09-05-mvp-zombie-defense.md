@@ -1439,10 +1439,10 @@ Add these methods to the class:
   }
 ```
 
-Add an `update()` method with the expiry/blink loop (this is the first task to need `update()` — Task 13 will extend it with zombie movement):
+Add an `update()` method with the expiry/blink loop (this is the first task to need `update()` — Task 13 will extend it with zombie movement, which is why the signature already takes Phaser's standard `(time, delta)` params even though this task doesn't use `delta` yet):
 
 ```ts
-  update(): void {
+  update(_time: number, delta: number): void {
     for (const drop of [...this.moneyDrops]) {
       if (isExpired(drop.droppedAt, this.time.now)) {
         this.removeMoneyDrop(drop)
@@ -1507,12 +1507,17 @@ export class Zombie extends Phaser.GameObjects.Rectangle {
 
 - [ ] **Step 2: Extend `MainScene` with wave spawning, movement, melee combat and outcome checking**
 
-Add imports to `src/game/scenes/MainScene.ts`:
+Merge the `../constants` import already in the file (from Task 12) with the new names this task needs, into one statement, and add the other new imports below it:
 
 ```ts
 import {
   CANNON_MAX_HP,
   CONTACT_RADIUS_PX,
+  FIELD_HEIGHT,
+  FIELD_WIDTH,
+  MONEY_SKY_AMOUNT,
+  MONEY_SKY_INTERVAL_MS,
+  MONEY_ZOMBIE_DROP_AMOUNT,
   ZOMBIE_ATTACK_INTERVAL_MS,
   ZOMBIE_SPAWN_X,
 } from '../constants'
@@ -1556,10 +1561,10 @@ Add, at the end of `create()` (after the `MONEY_SKY_INTERVAL_MS` timer from Task
     this.startWave(0)
 ```
 
-Extend the `update()` method created in Task 12 — add this loop before the existing money-drop expiry loop:
+Extend the `update()` method created in Task 12 — add this loop before the existing money-drop expiry loop (`delta` is the method's second parameter, already declared in Task 12's signature):
 
 ```ts
-    const deltaSeconds = this.game.loop.delta / 1000
+    const deltaSeconds = delta / 1000
     const cannonAlive = !isDestroyed($cannonHp.get())
 
     for (const zombie of [...this.zombies]) {
@@ -1646,8 +1651,6 @@ Add these methods to the class:
     console.log('level outcome:', outcome)
   }
 ```
-
-Add `MONEY_ZOMBIE_DROP_AMOUNT` to the existing `../constants` import line from Task 12.
 
 - [ ] **Step 3: Verify manually**
 
