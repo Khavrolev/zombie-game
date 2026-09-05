@@ -2,6 +2,7 @@ import Phaser from 'phaser'
 import { gameConfig } from './game/config'
 import { level1 } from './game/levels/level1'
 import { MainScene } from './game/scenes/MainScene'
+import { initPersistence } from './state/persistence-bridge'
 import { addMoney } from './state/store'
 import { SOLDIER_COST } from './game/constants'
 import { mountHud } from './ui/Hud'
@@ -9,6 +10,8 @@ import { mountOutcomeOverlay } from './ui/Outcome'
 import { mountShop } from './ui/Shop'
 import { syncUiRootToCanvas } from './ui/sync-ui-bounds'
 import './ui/styles/tokens.css'
+
+initPersistence()
 
 const game = new Phaser.Game(gameConfig)
 game.scene.add('MainScene', MainScene, true, { level: level1 })
