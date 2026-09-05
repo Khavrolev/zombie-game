@@ -32,7 +32,7 @@ export class MainScene extends Phaser.Scene {
   private cannon!: Phaser.GameObjects.Rectangle
   private moneyDrops: MoneyDrop[] = []
   private zombies: Zombie[] = []
-  private soldiers: Soldier[] = []
+  private soldiers: Map<number, Soldier> = new Map()
   private soldierCooldowns = new Map<Soldier, number | null>()
   private waveIndex = 0
   private spawnedInWave = 0
@@ -87,7 +87,7 @@ export class MainScene extends Phaser.Scene {
     const cannonAlive = !isDestroyed($cannonHp.get())
 
     for (const zombie of [...this.zombies]) {
-      const nearbySoldier = this.soldiers.find((s) => distance(zombie, s) <= CONTACT_RADIUS_PX)
+      const nearbySoldier = [...this.soldiers.values()].find((s) => distance(zombie, s) <= CONTACT_RADIUS_PX)
       if (nearbySoldier) {
         this.attackSoldierIfReady(zombie, nearbySoldier)
         continue
@@ -173,13 +173,23 @@ export class MainScene extends Phaser.Scene {
     }
   }
 
-  placeSoldier(): void {
-    if (this.soldiers.length >= this.level.soldierSlots.length) return
-    const slot = this.level.soldierSlots[this.soldiers.length]
+  placeSoldier(): boolean {
+    const slots = this.level.soldierSlots
+    let slotIndex = -1
+    for (let i = 0; i < slots.length; i++) {
+      if (!this.soldiers.has(i)) {
+        slotIndex = i
+        break
+      }
+    }
+    if (slotIndex === -1) return false
+
+    const slot = slots[slotIndex]
     const soldier = new Soldier(this, slot.x, slot.y)
-    this.soldiers.push(soldier)
+    this.soldiers.set(slotIndex, soldier)
     this.soldierCooldowns.set(soldier, null)
     soldier.on('pointerdown', () => this.fireSoldier(soldier))
+    return true
   }
 
   private fireSoldier(soldier: Soldier): void {
@@ -206,7 +216,12 @@ export class MainScene extends Phaser.Scene {
 
   private removeSoldier(soldier: Soldier): void {
     soldier.destroy()
-    this.soldiers = this.soldiers.filter((s) => s !== soldier)
+    for (const [index, s] of this.soldiers) {
+      if (s === soldier) {
+        this.soldiers.delete(index)
+        break
+      }
+    }
     this.soldierCooldowns.delete(soldier)
   }
 
