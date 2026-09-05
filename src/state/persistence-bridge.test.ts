@@ -5,6 +5,8 @@ import { initPersistence } from './persistence-bridge'
 
 beforeEach(() => {
   localStorage.clear()
+  $money.off()
+  $levelCompleted.off()
   $money.set(0)
   $levelCompleted.set(false)
 })
