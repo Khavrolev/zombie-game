@@ -1739,6 +1739,7 @@ git commit -m "feat: wire cannon click to fire at the 4 nearest zombies"
 ### Task 15: HUD — money counter
 
 **Files:**
+- Create: `src/vite-env.d.ts` — Vite's ambient type declarations, needed so TypeScript recognizes `*.module.css` imports (this task is the first to use CSS Modules; without this file, `tsc --noEmit` fails on `import styles from './Hud.module.css'` with "cannot find module").
 - Create: `src/ui/Hud.ts`
 - Create: `src/ui/Hud.module.css`
 - Modify: `src/main.ts` — mount the HUD.
@@ -1748,6 +1749,12 @@ git commit -m "feat: wire cannon click to fire at the 4 nearest zombies"
 - Produces: `mountHud(root: HTMLElement): void`.
 
 This task has no automated test (DOM wiring is trivial and observed visually) — verify manually.
+
+- [ ] **Step 0: Create `src/vite-env.d.ts`**
+
+```ts
+/// <reference types="vite/client" />
+```
 
 - [ ] **Step 1: Create `src/ui/Hud.module.css`**
 
@@ -1812,7 +1819,7 @@ Expected: a "Деньги: 0" panel in the top-left corner. Collecting a sky mon
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/ui/Hud.ts src/ui/Hud.module.css src/main.ts
+git add src/vite-env.d.ts src/ui/Hud.ts src/ui/Hud.module.css src/main.ts
 git commit -m "feat: add HUD money counter"
 ```
 
