@@ -13,7 +13,15 @@ export function loadProgress(): Progress | null {
   const raw = localStorage.getItem(STORAGE_KEY)
   if (!raw) return null
   try {
-    return JSON.parse(raw) as Progress
+    const parsed = JSON.parse(raw)
+    if (
+      typeof parsed?.money !== 'number' ||
+      !Number.isFinite(parsed.money) ||
+      typeof parsed?.levelCompleted !== 'boolean'
+    ) {
+      return null
+    }
+    return parsed as Progress
   } catch {
     return null
   }

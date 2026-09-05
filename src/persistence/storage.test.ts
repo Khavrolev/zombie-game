@@ -14,6 +14,16 @@ describe('loadProgress', () => {
     localStorage.setItem('zombie-game:progress', 'not json')
     expect(loadProgress()).toBeNull()
   })
+
+  it('returns null when the stored value is valid JSON but the wrong shape', () => {
+    localStorage.setItem('zombie-game:progress', '123')
+    expect(loadProgress()).toBeNull()
+  })
+
+  it('returns null when the stored value has a non-numeric money field', () => {
+    localStorage.setItem('zombie-game:progress', '{"money":"not-a-number","levelCompleted":true}')
+    expect(loadProgress()).toBeNull()
+  })
 })
 
 describe('saveProgress / loadProgress round trip', () => {

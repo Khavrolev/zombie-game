@@ -80,14 +80,21 @@ export class MainScene extends Phaser.Scene {
     })
 
     $cannonHp.subscribe((hp) => {
-      this.cannon.setFillStyle(isDestroyed(hp) ? 0x555555 : 0x3355aa)
-    })
-
-    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      if (this.rakePlacementActive) {
-        this.tryPlaceRake(pointer.x, pointer.y)
+      const destroyed = isDestroyed(hp)
+      this.cannon.setFillStyle(destroyed ? 0x555555 : 0x3355aa)
+      if (destroyed) {
+        this.cannon.disableInteractive()
       }
     })
+
+    this.input.on(
+      'pointerdown',
+      (pointer: Phaser.Input.Pointer, currentlyOver: Phaser.GameObjects.GameObject[]) => {
+        if (this.rakePlacementActive && currentlyOver.length === 0) {
+          this.tryPlaceRake(pointer.x, pointer.y)
+        }
+      }
+    )
 
     this.startWave(0)
   }
@@ -127,7 +134,7 @@ export class MainScene extends Phaser.Scene {
         continue
       }
       const blinkVisible = !isBlinking(drop.droppedAt, this.time.now) || Math.floor(this.time.now / 150) % 2 === 0
-      drop.setVisible(blinkVisible)
+      drop.setAlpha(blinkVisible ? 1 : 0.25)
     }
 
     for (const rake of [...this.rakes]) {
@@ -182,6 +189,7 @@ export class MainScene extends Phaser.Scene {
   }
 
   private fireCannon(): void {
+    if (isDestroyed($cannonHp.get())) return
     const now = this.time.now
     if (!canFire(this.lastCannonFiredAt, now, CANNON_COOLDOWN_MS)) return
     this.lastCannonFiredAt = now
