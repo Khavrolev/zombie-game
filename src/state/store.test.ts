@@ -3,7 +3,6 @@ import { $cannonHp, $levelCompleted, $money, addMoney, resetCannon, spendMoney }
 
 beforeEach(() => {
   $money.set(0)
-  $levelCompleted.set(false)
   resetCannon()
 })
 
