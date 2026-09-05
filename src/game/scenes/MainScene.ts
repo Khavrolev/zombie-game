@@ -2,6 +2,8 @@ import Phaser from 'phaser'
 import { $cannonHp, addMoney, resetCannon } from '../../state/store'
 import {
   CANNON_MAX_HP,
+  CANNON_BURST_COUNT,
+  CANNON_COOLDOWN_MS,
   CONTACT_RADIUS_PX,
   FIELD_HEIGHT,
   FIELD_WIDTH,
@@ -17,7 +19,7 @@ import { canFire } from '../logic/cooldown'
 import { applyHit, isDestroyed } from '../logic/durability'
 import { getLevelOutcome } from '../logic/level-outcome'
 import { moveToward } from '../logic/movement'
-import { distance } from '../logic/targeting'
+import { distance, nearestTargets } from '../logic/targeting'
 import { MoneyDrop } from '../entities/MoneyDrop'
 import type { LevelConfig } from '../levels/types'
 import { isBlinking, isExpired } from '../logic/money-drop'
@@ -34,6 +36,7 @@ export class MainScene extends Phaser.Scene {
   killedCount = 0
   private chestReached = false
   private outcomeResolved = false
+  private lastCannonFiredAt: number | null = null
 
   constructor() {
     super('MainScene')
@@ -59,9 +62,7 @@ export class MainScene extends Phaser.Scene {
       0x3355aa
     )
     this.cannon.setInteractive()
-    this.cannon.on('pointerdown', () => {
-      console.log('cannon clicked')
-    })
+    this.cannon.on('pointerdown', () => this.fireCannon())
 
     this.time.addEvent({
       delay: MONEY_SKY_INTERVAL_MS,
@@ -149,6 +150,17 @@ export class MainScene extends Phaser.Scene {
     if (!canFire(zombie.lastAttackAt, now, ZOMBIE_ATTACK_INTERVAL_MS)) return
     zombie.lastAttackAt = now
     $cannonHp.set(applyHit($cannonHp.get(), CANNON_MAX_HP))
+  }
+
+  private fireCannon(): void {
+    const now = this.time.now
+    if (!canFire(this.lastCannonFiredAt, now, CANNON_COOLDOWN_MS)) return
+    this.lastCannonFiredAt = now
+
+    const targets = nearestTargets(this.cannon, this.zombies, CANNON_BURST_COUNT)
+    for (const zombie of targets) {
+      this.hitZombie(zombie)
+    }
   }
 
   private startWave(index: number): void {
