@@ -1,5 +1,6 @@
 import { loadProgress } from '../persistence/storage'
 import { START_MENU_CONTINUE, START_MENU_NEW_GAME, START_MENU_START, START_MENU_TITLE } from './copy'
+import { requestFullscreenIfSupported } from './fullscreen'
 import styles from './StartMenu.module.css'
 
 export interface StartMenuHandlers {
@@ -23,6 +24,7 @@ export function mountStartMenu(root: HTMLElement, handlers: StartMenuHandlers): 
     continueButton.className = styles.button
     continueButton.textContent = START_MENU_CONTINUE
     continueButton.addEventListener('click', () => {
+      requestFullscreenIfSupported()
       overlay.remove()
       handlers.onContinue()
     })
@@ -33,6 +35,7 @@ export function mountStartMenu(root: HTMLElement, handlers: StartMenuHandlers): 
   newGameButton.className = styles.button
   newGameButton.textContent = hasSavedProgress ? START_MENU_NEW_GAME : START_MENU_START
   newGameButton.addEventListener('click', () => {
+    requestFullscreenIfSupported()
     overlay.remove()
     handlers.onNewGame()
   })

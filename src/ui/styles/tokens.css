@@ -34,7 +34,8 @@ body {
 #game-container {
   position: relative;
   width: 100vw;
-  height: 100vh;
+  height: 100vh; /* fallback for browsers without dvh support */
+  height: 100dvh; /* real visible viewport height — accounts for mobile browser toolbars */
   touch-action: none;
 }
 
