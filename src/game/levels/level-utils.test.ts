@@ -6,8 +6,8 @@ import { BASIC_ZOMBIE } from './zombie-types'
 const baseLevel: Omit<LevelConfig, 'waves'> = {
   id: 1,
   backgroundColor: 0x000000,
-  cannonPosition: { x: 0, y: 0 },
-  chestPosition: { x: 0, y: 0 },
+  cannonPosition: { xFraction: 0, yFraction: 0 },
+  chestPosition: { xFraction: 0, yFraction: 0 },
   soldierSlots: [],
 }
 

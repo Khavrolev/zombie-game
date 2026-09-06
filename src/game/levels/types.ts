@@ -1,4 +1,4 @@
-import type { Point } from '../types'
+import type { RelativePoint } from '../types'
 
 export interface ZombieType {
   id: string
@@ -17,8 +17,8 @@ export interface WaveConfig {
 export interface LevelConfig {
   id: number
   backgroundColor: number
-  cannonPosition: Point
-  chestPosition: Point
-  soldierSlots: Point[]
+  cannonPosition: RelativePoint
+  chestPosition: RelativePoint
+  soldierSlots: RelativePoint[]
   waves: WaveConfig[]
 }

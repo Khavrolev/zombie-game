@@ -9,6 +9,7 @@ import { mountHud } from './ui/Hud'
 import { mountOutcomeOverlay } from './ui/Outcome'
 import { mountShop } from './ui/Shop'
 import { mountStartMenu } from './ui/StartMenu'
+import { maskReflowOnOrientationChange } from './ui/reflow-overlay'
 import { syncUiRootToCanvas } from './ui/sync-ui-bounds'
 import './ui/styles/tokens.css'
 
@@ -20,6 +21,7 @@ const uiRoot = document.getElementById(UI_ROOT_ELEMENT_ID)
 
 if (uiRoot) {
   syncUiRootToCanvas(game, uiRoot)
+  maskReflowOnOrientationChange()
   mountHud(uiRoot)
   mountOutcomeOverlay(uiRoot)
   mountShop(uiRoot, {

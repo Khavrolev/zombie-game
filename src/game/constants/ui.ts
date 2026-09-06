@@ -17,3 +17,5 @@ export const SOLDIER_HP_PIP_OFFSET_Y = 34
 
 export const HIT_PULSE_SCALE = 1.4
 export const HIT_PULSE_DURATION_MS = 100
+
+export const TAP_TARGET_PADDING_PX = 5

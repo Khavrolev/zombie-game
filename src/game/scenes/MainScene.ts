@@ -12,8 +12,6 @@ import {
   CHEST_COLOR,
   CHEST_SIZE,
   CONTACT_RADIUS_PX,
-  FIELD_HEIGHT,
-  FIELD_WIDTH,
   GAME_OUTCOME_EVENT,
   HIT_PULSE_DURATION_MS,
   HIT_PULSE_SCALE,
@@ -47,9 +45,10 @@ import {
   SOLDIER_RELOAD_BAR_OFFSET_Y,
   SPAWN_MARGIN_PX,
   ZOMBIE_ATTACK_INTERVAL_MS,
-  ZOMBIE_SPAWN_X,
+  ZOMBIE_SPAWN_EDGE_MARGIN_PX,
 } from '../constants'
 import { Rake } from '../entities/Rake'
+import { setPaddedInteractive } from '../entities/setPaddedInteractive'
 import { Soldier } from '../entities/Soldier'
 import { Zombie } from '../entities/Zombie'
 import { getTotalZombieCount } from '../levels/level-utils'
@@ -60,7 +59,7 @@ import { moveToward } from '../logic/movement'
 import { distance, nearestTargets } from '../logic/targeting'
 import { MoneyDrop } from '../entities/MoneyDrop'
 import type { LevelConfig } from '../levels/types'
-import type { Point } from '../types'
+import type { Point, RelativePoint } from '../types'
 import { isBlinking, isExpired } from '../logic/money-drop'
 
 export class MainScene extends Phaser.Scene {
@@ -87,6 +86,14 @@ export class MainScene extends Phaser.Scene {
   private cannonReloadBar!: Phaser.GameObjects.Graphics
   private isPaused = false
   private pauseOverlay!: Phaser.GameObjects.Container
+  private pauseBg!: Phaser.GameObjects.Rectangle
+  private pauseText!: Phaser.GameObjects.Text
+
+  // Absolute pixel positions resolved from the level's RelativePoint data
+  // against the current (resizable) field size — recomputed on every resize.
+  private cannonPos!: Point
+  private chestPos!: Point
+  private soldierSlotPositions: Point[] = []
 
   constructor() {
     super(MAIN_SCENE_KEY)
@@ -102,27 +109,17 @@ export class MainScene extends Phaser.Scene {
 
     this.cameras.main.setBackgroundColor(this.level.backgroundColor)
 
-    this.chest = this.add.rectangle(
-      this.level.chestPosition.x,
-      this.level.chestPosition.y,
-      CHEST_SIZE,
-      CHEST_SIZE,
-      CHEST_COLOR
-    )
+    this.applyLayout()
 
-    this.cannon = this.add.rectangle(
-      this.level.cannonPosition.x,
-      this.level.cannonPosition.y,
-      CANNON_SIZE,
-      CANNON_SIZE,
-      CANNON_COLOR_ALIVE
-    )
-    this.cannon.setInteractive({ cursor: 'pointer' })
+    this.chest = this.add.rectangle(this.chestPos.x, this.chestPos.y, CHEST_SIZE, CHEST_SIZE, CHEST_COLOR)
+
+    this.cannon = this.add.rectangle(this.cannonPos.x, this.cannonPos.y, CANNON_SIZE, CANNON_SIZE, CANNON_COLOR_ALIVE)
+    setPaddedInteractive(this.cannon, CANNON_SIZE, CANNON_SIZE)
     this.cannon.on('pointerdown', () => this.fireCannon())
 
     this.cannonReloadBar = this.add.graphics()
     this.cannonHpPips = this.add.graphics()
-    this.drawHpPips(this.cannonHpPips, this.level.cannonPosition, CANNON_MAX_HP, CANNON_MAX_HP, CANNON_HP_PIP_OFFSET_Y)
+    this.drawHpPips(this.cannonHpPips, this.cannonPos, CANNON_MAX_HP, CANNON_MAX_HP, CANNON_HP_PIP_OFFSET_Y)
 
     this.time.addEvent({
       delay: MONEY_SKY_INTERVAL_MS,
@@ -136,7 +133,7 @@ export class MainScene extends Phaser.Scene {
       if (destroyed) {
         this.cannon.disableInteractive()
       }
-      this.drawHpPips(this.cannonHpPips, this.level.cannonPosition, hp, CANNON_MAX_HP, CANNON_HP_PIP_OFFSET_Y)
+      this.drawHpPips(this.cannonHpPips, this.cannonPos, hp, CANNON_MAX_HP, CANNON_HP_PIP_OFFSET_Y)
     })
 
     this.input.on(
@@ -148,28 +145,67 @@ export class MainScene extends Phaser.Scene {
       }
     )
 
-    const pauseBg = this.add.rectangle(
-      FIELD_WIDTH / 2,
-      FIELD_HEIGHT / 2,
-      FIELD_WIDTH,
-      FIELD_HEIGHT,
+    this.pauseBg = this.add.rectangle(
+      this.scale.width / 2,
+      this.scale.height / 2,
+      this.scale.width,
+      this.scale.height,
       PAUSE_OVERLAY_COLOR,
       PAUSE_OVERLAY_ALPHA
     )
-    const pauseText = this.add
-      .text(FIELD_WIDTH / 2, FIELD_HEIGHT / 2, PAUSE_TEXT, {
+    this.pauseText = this.add
+      .text(this.scale.width / 2, this.scale.height / 2, PAUSE_TEXT, {
         fontSize: PAUSE_TEXT_FONT_SIZE,
         color: PAUSE_TEXT_COLOR,
         align: PAUSE_TEXT_ALIGN,
       })
       .setOrigin(0.5)
-    this.pauseOverlay = this.add.container(0, 0, [pauseBg, pauseText])
+    this.pauseOverlay = this.add.container(0, 0, [this.pauseBg, this.pauseText])
     this.pauseOverlay.setDepth(PAUSE_OVERLAY_DEPTH)
     this.pauseOverlay.setVisible(false)
 
     this.input.keyboard?.on('keydown-ESC', () => this.togglePause())
 
+    this.scale.on(Phaser.Scale.Events.RESIZE, () => this.applyLayout())
+
     this.startWave(0)
+  }
+
+  /**
+   * Resolves the level's relative (fraction-of-field) positions to real pixel
+   * coordinates for the current field size, and — once those game objects
+   * exist — repositions everything that's anchored to a fixed spot on the
+   * field. Called once during boot and again on every `resize` event (screen
+   * rotation, browser window resize), since the field fills the real screen
+   * (`Scale.RESIZE`) rather than a fixed design resolution.
+   */
+  private applyLayout(): void {
+    const width = this.scale.width
+    const height = this.scale.height
+
+    this.cannonPos = this.toAbsolute(this.level.cannonPosition, width, height)
+    this.chestPos = this.toAbsolute(this.level.chestPosition, width, height)
+    this.soldierSlotPositions = this.level.soldierSlots.map((slot) => this.toAbsolute(slot, width, height))
+
+    this.cameras.resize(width, height)
+
+    this.chest?.setPosition(this.chestPos.x, this.chestPos.y)
+    this.cannon?.setPosition(this.cannonPos.x, this.cannonPos.y)
+
+    for (const [index, soldier] of this.soldiers) {
+      const pos = this.soldierSlotPositions[index]
+      if (pos) soldier.setPosition(pos.x, pos.y)
+    }
+
+    if (this.pauseBg && this.pauseText) {
+      this.pauseBg.setPosition(width / 2, height / 2)
+      this.pauseBg.setSize(width, height)
+      this.pauseText.setPosition(width / 2, height / 2)
+    }
+  }
+
+  private toAbsolute(point: RelativePoint, width: number, height: number): Point {
+    return { x: point.xFraction * width, y: point.yFraction * height }
   }
 
   private togglePause(): void {
@@ -193,17 +229,17 @@ export class MainScene extends Phaser.Scene {
         continue
       }
 
-      const inCannonRange = cannonAlive && distance(zombie, this.level.cannonPosition) <= CONTACT_RADIUS_PX
+      const inCannonRange = cannonAlive && distance(zombie, this.cannonPos) <= CONTACT_RADIUS_PX
       if (inCannonRange) {
         this.attackCannonIfReady(zombie)
         continue
       }
 
-      const moveTarget = cannonAlive ? this.level.cannonPosition : this.level.chestPosition
+      const moveTarget = cannonAlive ? this.cannonPos : this.chestPos
       const next = moveToward(zombie, moveTarget, zombie.speedPxPerSec, deltaSeconds)
       zombie.setPosition(next.x, next.y)
 
-      if (!cannonAlive && distance(zombie, this.level.chestPosition) <= CONTACT_RADIUS_PX) {
+      if (!cannonAlive && distance(zombie, this.chestPos) <= CONTACT_RADIUS_PX) {
         this.chestReached = true
         this.pulseObject(this.chest)
         this.removeZombie(zombie)
@@ -211,7 +247,7 @@ export class MainScene extends Phaser.Scene {
     }
 
     this.checkOutcome()
-    this.drawReloadBar(this.cannonReloadBar, this.level.cannonPosition, this.lastCannonFiredAt, CANNON_COOLDOWN_MS, CANNON_RELOAD_BAR_OFFSET_Y)
+    this.drawReloadBar(this.cannonReloadBar, this.cannonPos, this.lastCannonFiredAt, CANNON_COOLDOWN_MS, CANNON_RELOAD_BAR_OFFSET_Y)
 
     for (const [soldier, bar] of this.soldierReloadBars) {
       const lastFiredAt = this.soldierCooldowns.get(soldier) ?? null
@@ -240,8 +276,8 @@ export class MainScene extends Phaser.Scene {
   }
 
   private spawnSkyMoney(): void {
-    const x = Phaser.Math.Between(SPAWN_MARGIN_PX, FIELD_WIDTH - SPAWN_MARGIN_PX)
-    const y = Phaser.Math.Between(SPAWN_MARGIN_PX, FIELD_HEIGHT - SPAWN_MARGIN_PX)
+    const x = Phaser.Math.Between(SPAWN_MARGIN_PX, this.scale.width - SPAWN_MARGIN_PX)
+    const y = Phaser.Math.Between(SPAWN_MARGIN_PX, this.scale.height - SPAWN_MARGIN_PX)
     this.spawnMoneyDrop(x, y, MONEY_SKY_AMOUNT)
   }
 
@@ -366,7 +402,7 @@ export class MainScene extends Phaser.Scene {
     }
     if (slotIndex === -1) return false
 
-    const slot = slots[slotIndex]
+    const slot = this.soldierSlotPositions[slotIndex]
     const soldier = new Soldier(this, slot.x, slot.y)
     this.soldiers.set(slotIndex, soldier)
     this.soldierCooldowns.set(soldier, null)
@@ -437,8 +473,9 @@ export class MainScene extends Phaser.Scene {
 
   private spawnZombieForWave(index: number): void {
     const wave = this.level.waves[index]
-    const y = Phaser.Math.Between(SPAWN_MARGIN_PX, FIELD_HEIGHT - SPAWN_MARGIN_PX)
-    const zombie = new Zombie(this, ZOMBIE_SPAWN_X, y, wave.zombieType)
+    const x = this.scale.width - ZOMBIE_SPAWN_EDGE_MARGIN_PX
+    const y = Phaser.Math.Between(SPAWN_MARGIN_PX, this.scale.height - SPAWN_MARGIN_PX)
+    const zombie = new Zombie(this, x, y, wave.zombieType)
     this.zombies.push(zombie)
     this.spawnedInWave += 1
 

@@ -1,5 +1,6 @@
 import Phaser from 'phaser'
 import { MONEY_DROP_COLOR, MONEY_DROP_SIZE } from '../constants'
+import { setPaddedInteractive } from './setPaddedInteractive'
 
 export class MoneyDrop extends Phaser.GameObjects.Rectangle {
   droppedAt: number
@@ -10,6 +11,6 @@ export class MoneyDrop extends Phaser.GameObjects.Rectangle {
     this.amount = amount
     this.droppedAt = now
     scene.add.existing(this)
-    this.setInteractive({ cursor: 'pointer' })
+    setPaddedInteractive(this, MONEY_DROP_SIZE, MONEY_DROP_SIZE)
   }
 }

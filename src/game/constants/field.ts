@@ -1,11 +1,20 @@
-import type { Point } from '../types'
+import type { RelativePoint } from '../types'
 
-export const FIELD_WIDTH = 960
-export const FIELD_HEIGHT = 540
+// Reference resolution used ONLY to derive the fractions below in a readable
+// way — the actual field is dynamic (Scale.RESIZE, fills the real screen),
+// computed at runtime from `this.scale.width`/`this.scale.height`.
+export const DESIGN_WIDTH = 960
+export const DESIGN_HEIGHT = 540
 
-export const CANNON_POSITION: Point = { x: 80, y: 270 }
-export const CHEST_POSITION: Point = { x: 20, y: 270 }
+export const CANNON_POSITION: RelativePoint = {
+  xFraction: 80 / DESIGN_WIDTH,
+  yFraction: 270 / DESIGN_HEIGHT,
+}
+export const CHEST_POSITION: RelativePoint = {
+  xFraction: 20 / DESIGN_WIDTH,
+  yFraction: 270 / DESIGN_HEIGHT,
+}
+
 export const CONTACT_RADIUS_PX = 24
 export const SPAWN_MARGIN_PX = 40
-
-export const ZOMBIE_SPAWN_X = FIELD_WIDTH - 20
+export const ZOMBIE_SPAWN_EDGE_MARGIN_PX = 20
