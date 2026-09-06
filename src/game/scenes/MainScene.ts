@@ -199,10 +199,22 @@ export class MainScene extends Phaser.Scene {
 
     this.chest?.setPosition(this.chestPos.x, this.chestPos.y)
     this.cannon?.setPosition(this.cannonPos.x, this.cannonPos.y)
+    if (this.cannon && this.cannonHpPips) {
+      // The reload bar redraws every frame from live positions, so it
+      // self-corrects on its own — but HP pips only redraw on an HP change,
+      // so without this they'd stay stuck at their pre-resize position
+      // while the cannon itself moves to the new one.
+      this.drawHpPips(this.cannonHpPips, this.cannonPos, $cannonHp.get(), CANNON_MAX_HP, CANNON_HP_PIP_OFFSET_Y)
+    }
 
     for (const [index, soldier] of this.soldiers) {
       const pos = this.soldierSlotPositions[index]
-      if (pos) soldier.setPosition(pos.x, pos.y)
+      if (!pos) continue
+      soldier.setPosition(pos.x, pos.y)
+      const hpPips = this.soldierHpPips.get(soldier)
+      if (hpPips) {
+        this.drawHpPips(hpPips, soldier, soldier.hp, SOLDIER_MAX_HP, SOLDIER_HP_PIP_OFFSET_Y)
+      }
     }
 
     if (this.pauseBg && this.pauseText) {
