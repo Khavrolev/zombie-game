@@ -1,0 +1,1 @@
+export const ZOMBIE_ATTACK_INTERVAL_MS = 5000

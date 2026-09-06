@@ -1,0 +1,11 @@
+.hud {
+  position: absolute;
+  top: var(--spacing-md);
+  left: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-panel-bg);
+  color: var(--color-text);
+  font-family: var(--font-base);
+  border-radius: var(--radius-sm);
+  pointer-events: none;
+}

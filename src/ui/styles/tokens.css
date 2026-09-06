@@ -1,0 +1,69 @@
+:root {
+  --color-bg: #1b2a1b;
+  --color-primary: #3355aa;
+  --color-primary-hover: #4466cc;
+  --color-danger: #a33333;
+  --color-success: #2e8b57;
+  --color-text: #f2f2f2;
+  --color-panel-bg: rgba(0, 0, 0, 0.6);
+  --spacing-sm: 4px;
+  --spacing-md: 8px;
+  --spacing-lg: 16px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --font-base: system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--color-bg);
+  font-family: var(--font-base);
+}
+
+#game-container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  touch-action: none;
+}
+
+#ui-root {
+  position: absolute;
+  pointer-events: none;
+}
+
+#rotate-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 1.2rem;
+  padding: var(--spacing-lg);
+  z-index: 1000;
+}
+
+/* Small-screen heuristic (max-width) so a tall desktop window is never blocked — only phones/tablets held upright. */
+@media (orientation: portrait) and (max-width: 900px) {
+  #rotate-overlay {
+    display: flex;
+  }
+
+  #game-container {
+    display: none;
+  }
+}

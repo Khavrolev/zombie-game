@@ -1,0 +1,9 @@
+export const MONEY_SKY_INTERVAL_MS = 30000
+export const MONEY_SKY_AMOUNT = 50
+export const MONEY_ZOMBIE_DROP_AMOUNT = 10
+export const MONEY_DROP_TTL_MS = 5000
+export const MONEY_DROP_BLINK_MS = 2000
+export const MONEY_DROP_SIZE = 18
+export const MONEY_DROP_COLOR = 0x2e8b57
+export const MONEY_DROP_BLINK_FLICKER_MS = 150
+export const MONEY_DROP_DIM_ALPHA = 0.25
