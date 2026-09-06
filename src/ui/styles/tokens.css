@@ -65,9 +65,15 @@ body {
     display: flex;
   }
 
-  #game-container {
-    display: none;
-  }
+  /* Deliberately NOT `display: none` on #game-container here: Phaser's
+     WebGL renderer finishes booting asynchronously (after its default
+     textures load) and creates a framebuffer sized to the canvas's parent
+     at that exact moment. If that lands while the container is 0×0
+     (display: none), framebuffer creation throws and the renderer is dead
+     for the rest of the page's life — no later resize can recover it. The
+     opaque, higher z-index #rotate-overlay already fully covers and blocks
+     interaction with the game underneath, so hiding the container too is
+     unnecessary and unsafe. */
 }
 
 /* Covers the screen while the layout re-settles after an orientation

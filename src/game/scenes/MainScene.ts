@@ -12,6 +12,8 @@ import {
   CHEST_COLOR,
   CHEST_SIZE,
   CONTACT_RADIUS_PX,
+  DESIGN_HEIGHT,
+  DESIGN_WIDTH,
   GAME_OUTCOME_EVENT,
   HIT_PULSE_DURATION_MS,
   HIT_PULSE_SCALE,
@@ -180,8 +182,14 @@ export class MainScene extends Phaser.Scene {
    * (`Scale.RESIZE`) rather than a fixed design resolution.
    */
   private applyLayout(): void {
-    const width = this.scale.width
-    const height = this.scale.height
+    // Scale.RESIZE can (briefly, e.g. mid-rotation, or on an early boot
+    // measurement) report a zero or unmeasured size. Passing that straight
+    // into cameras.resize() creates a zero-size WebGL framebuffer, which
+    // crashes the renderer outright ("Framebuffer status: Incomplete
+    // Attachment") — fall back to the design resolution instead; a later,
+    // valid resize event corrects the layout for real.
+    const width = this.scale.width > 0 ? this.scale.width : DESIGN_WIDTH
+    const height = this.scale.height > 0 ? this.scale.height : DESIGN_HEIGHT
 
     this.cannonPos = this.toAbsolute(this.level.cannonPosition, width, height)
     this.chestPos = this.toAbsolute(this.level.chestPosition, width, height)
